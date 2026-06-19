@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>CodeBot Advanced — CodeAlpha Chatbot</title>
+<style>
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: radial-gradient(circle at top, #2a2f55 0%, #11131c 70%);
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .chat-card {
+    width: 420px;
+    max-width: 100%;
+    height: 660px;
+    background: #1b1e30;
+    border-radius: 20px;
+    border: 1px solid #353c5c;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .chat-header {
+    background: linear-gradient(120deg, #4d7cff, #6f5bff);
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .bot-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: #ffffff22;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #6fd3a4;
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    border: 2px solid #1b1e30;
+  }
+
+  .header-text { flex: 1; }
+
+  .header-text h1 {
+    margin: 0;
+    font-size: 16px;
+    color: white;
+    font-weight: 600;
+  }
+
+  .header-text p {
+    margin: 2px 0 0;
+    font-size: 12px;
+    color: #e3e6ff;
+  }
+
+  .badge {
+    background: #ffffff2a;
+    color: white;
+    font-size: 10px;
+    padding: 4px 9px;
+    border-radius: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+
+  .chat-messages {
+    flex: 1;
+    padding: 18px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background:
+      radial-gradient(circle at 20% 10%, #232746 0%, transparent 40%),
+      #161829;
+  }
+
+  .chat-messages::-webkit-scrollbar { width: 6px; }
+  .chat-messages::-webkit-scrollbar-thumb { background: #353c5c; border-radius: 4px; }
+
+  .msg-row {
+    display: flex;
+    gap: 8px;
+    max-width: 85%;
+    animation: fadeIn 0.25s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .msg-row.bot { align-self: flex-start; }
+  .msg-row.user { align-self: flex-end; flex-direction: row-reverse; }
+
+  .msg-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+  }
+
+  .msg-row.bot .msg-avatar { background: #4d7cff33; color: #8aa3ff; }
+  .msg-row.user .msg-avatar { background: #6fd3a433; color: #6fd3a4; }
+
+  .bubble {
+    padding: 10px 14px;
+    border-radius: 14px;
+    font-size: 14px;
+    line-height: 1.45;
+    color: #e9ecf5;
+  }
+
+  .msg-row.bot .bubble {
+    background: #272c47;
+    border-bottom-left-radius: 4px;
+  }
+
+  .msg-row.user .bubble {
+    background: linear-gradient(120deg, #4d7cff, #6f5bff);
+    color: white;
+    border-bottom-right-radius: 4px;
+  }
+
+  .typing-bubble {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    padding: 12px 14px;
+  }
+
+  .typing-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #9aa3c7;
+    animation: bounce 1.2s infinite;
+  }
+
+  .typing-dot:nth-child(2) { animation-delay: 0.15s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.3s; }
+
+  @keyframes bounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+    30% { transform: translateY(-4px); opacity: 1; }
+  }
+
+  .quick-replies {
+    display: flex;
+    gap: 8px;
+    padding: 0 18px 12px;
+    flex-wrap: wrap;
+    background: #161829;
+  }
+
+  .chip {
+    background: #272c47;
+    border: 1px solid #3a4070;
+    color: #aab4ff;
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.15s;
+    white-space: nowrap;
+  }
+
+  .chip:hover { background: #353c5c; }
+
+  .chat-input-bar {
+    display: flex;
+    gap: 10px;
+    padding: 14px 16px;
+    background: #1b1e30;
+    border-top: 1px solid #2a2f4d;
+  }
+
+  #user-input {
+    flex: 1;
+    background: #272c47;
+    border: 1px solid #3a4070;
+    border-radius: 22px;
+    padding: 11px 16px;
+    color: #e9ecf5;
+    font-size: 14px;
+    outline: none;
+  }
+
+  #user-input:focus { border-color: #4d7cff; }
+
+  .send-btn {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    border: none;
+    background: linear-gradient(120deg, #4d7cff, #6f5bff);
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.1s;
+  }
+
+  .send-btn:hover { transform: scale(1.06); }
+  .send-btn:active { transform: scale(0.95); }
+</style>
+</head>
+<body>
+
+<div class="chat-card">
+  <div class="chat-header">
+    <div class="bot-avatar">🤖<span class="status-dot"></span></div>
+    <div class="header-text">
+      <h1>CodeBot</h1>
+      <p>CodeAlpha Internship — Task 4</p>
+    </div>
+    <div class="badge">ADVANCED</div>
+  </div>
+
+  <div class="chat-messages" id="chat-messages"></div>
+
+  <div class="quick-replies" id="quick-replies">
+    <div class="chip" onclick="sendQuick('hello')">👋 Hello</div>
+    <div class="chip" onclick="sendQuick('tell me a joke')">😂 Joke</div>
+    <div class="chip" onclick="sendQuick('what time is it')">🕒 Time</div>
+    <div class="chip" onclick="sendQuick('who made you')">🛠️ Creator</div>
+    <div class="chip" onclick="sendQuick('help')">❓ Help</div>
+    <div class="chip" onclick="sendQuick('bye')">👋 Bye</div>
+  </div>
+
+  <div class="chat-input-bar">
+    <input type="text" id="user-input" placeholder="Type a message..." onkeypress="if(event.key==='Enter') sendMessage()">
+    <button class="send-btn" onclick="sendMessage()">➤</button>
+  </div>
+</div>
+
+<script>
+  const BOT_NAME = "CodeBot";
+  const CREATOR = "a CodeAlpha intern";
+
+  function containsAny(text, keywords) {
+    return keywords.some(word => text.includes(word));
+  }
+
+  function pick(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+
+  // Same advanced rule logic as the Python version (chatbot_advanced.py) — keep in sync.
+  function getResponse(userInput) {
+    const text = userInput.toLowerCase().trim();
+
+    if (!text) return "Say something — I'm listening!";
+
+    if (containsAny(text, ["bye", "goodbye", "see you", "exit", "quit", "good night"])) {
+      return pick(["Goodbye! Take care.", "See you later!", "Bye! It was nice chatting."]);
+    }
+    else if (containsAny(text, ["hello", "hi", "hey", "salaam", "assalam", "yo"])) {
+      return pick(["Hi there!", "Hello!", "Hey! Good to see you.", "Hi! How's it going?"]);
+    }
+    else if (containsAny(text, ["how are you", "how r u", "how do you do", "kaise ho", "kya hal"])) {
+      return "I'm fine, thanks! How about you?";
+    }
+    else if (containsAny(text, ["i am good", "i'm good", "i'm fine", "doing good", "doing great", "i am fine"])) {
+      return pick(["Glad to hear that! 😊", "That's great!"]);
+    }
+    else if (containsAny(text, ["i am sad", "i'm sad", "feeling down", "not good", "not feeling well", "i am tired", "i'm tired"])) {
+      return "I'm sorry to hear that. I hope things get better for you soon.";
+    }
+    else if (containsAny(text, ["your name", "who are you", "what are you"])) {
+      return `I'm ${BOT_NAME}, a rule-based chatbot built for a CodeAlpha internship task.`;
+    }
+    else if (containsAny(text, ["who made you", "who created you", "your creator"])) {
+      return `I was built by ${CREATOR} as part of the CodeAlpha Python internship.`;
+    }
+    else if (containsAny(text, ["how old are you", "your age"])) {
+      return "I don't have an age — I'm just lines of JavaScript and Python!";
+    }
+    else if (text.includes("my name is")) {
+      const name = text.split("my name is").pop().trim().split(" ")[0];
+      return `Nice to meet you, ${name.charAt(0).toUpperCase() + name.slice(1)}!`;
+    }
+    else if (text.startsWith("i am ") || text.startsWith("i'm ")) {
+      const rest = text.replace("i'm", "i am").replace("i am", "").trim().split(" ")[0];
+      if (rest) return `Nice to meet you, ${rest.charAt(0).toUpperCase() + rest.slice(1)}!`;
+      return "Nice to meet you!";
+    }
+    else if (containsAny(text, ["what time", "current time", "time now"])) {
+      const now = new Date();
+      return `Right now it's ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.`;
+    }
+    else if (containsAny(text, ["what date", "today's date", "what day"])) {
+      const now = new Date();
+      return `Today is ${now.toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}.`;
+    }
+    else if (text.includes("weather")) {
+      return "I can't check live weather, but I hope it's nice where you are!";
+    }
+    else if (containsAny(text, ["joke", "make me laugh", "funny"])) {
+      const jokes = [
+        "Why do programmers prefer dark mode? Because light attracts bugs!",
+        "Why did the function break up with the loop? It needed space.",
+        "I told my computer I needed a break, and it said: 'No problem, I'll go to sleep.'"
+      ];
+      return pick(jokes);
+    }
+    else if (containsAny(text, ["thanks", "thank you", "thx", "appreciate it"])) {
+      return pick(["You're welcome!", "Anytime!", "Happy to help!"]);
+    }
+    else if (containsAny(text, ["you are smart", "you are cool", "you are great", "good bot", "nice bot", "you're great", "love this"])) {
+      return "Aw, thank you! That made my day. 😊";
+    }
+    else if (containsAny(text, ["help", "what can you do", "options", "commands"])) {
+      return "I can chat about a few things — try greetings, asking how I am, my name, the time/date, asking for a joke, or saying bye.";
+    }
+    else if (["yes", "yeah", "yup", "sure"].includes(text)) {
+      return "Got it!";
+    }
+    else if (["no", "nope", "nah"].includes(text)) {
+      return "Okay, no worries.";
+    }
+    else {
+      const fallbacks = [
+        "Sorry, I didn't understand that. Try saying 'hello', 'how are you', or ask for a joke.",
+        "I'm not sure how to respond to that yet — I'm a simple rule-based bot!",
+        "Hmm, that's beyond what I know. Try 'help' to see what I can do."
+      ];
+      return pick(fallbacks);
+    }
+  }
+
+  function isExitCommand(text) {
+    return containsAny(text.toLowerCase().trim(), ["bye", "goodbye", "see you", "exit", "quit"]);
+  }
+
+  const messagesDiv = document.getElementById("chat-messages");
+  const userInput = document.getElementById("user-input");
+
+  function addMessage(text, sender) {
+    const row = document.createElement("div");
+    row.className = `msg-row ${sender}`;
+
+    const avatar = document.createElement("div");
+    avatar.className = "msg-avatar";
+    avatar.textContent = sender === "bot" ? "🤖" : "🙂";
+
+    const bubble = document.createElement("div");
+    bubble.className = "bubble";
+    bubble.textContent = text;
+
+    row.appendChild(avatar);
+    row.appendChild(bubble);
+    messagesDiv.appendChild(row);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  }
+
+  function showTyping() {
+    const row = document.createElement("div");
+    row.className = "msg-row bot";
+    row.id = "typing-row";
+
+    const avatar = document.createElement("div");
+    avatar.className = "msg-avatar";
+    avatar.textContent = "🤖";
+
+    const bubble = document.createElement("div");
+    bubble.className = "bubble typing-bubble";
+    bubble.innerHTML = `<span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>`;
+
+    row.appendChild(avatar);
+    row.appendChild(bubble);
+    messagesDiv.appendChild(row);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  }
+
+  function removeTyping() {
+    const row = document.getElementById("typing-row");
+    if (row) row.remove();
+  }
+
+  function handleUserMessage(text) {
+    addMessage(text, "user");
+    userInput.value = "";
+    userInput.disabled = true;
+
+    showTyping();
+
+    setTimeout(() => {
+      removeTyping();
+      const response = getResponse(text);
+      addMessage(response, "bot");
+      userInput.disabled = false;
+      userInput.focus();
+
+      if (isExitCommand(text)) {
+        userInput.disabled = true;
+        userInput.placeholder = "Chat ended — refresh to restart";
+      }
+    }, 600);
+  }
+
+  function sendMessage() {
+    const text = userInput.value.trim();
+    if (!text) return;
+    handleUserMessage(text);
+  }
+
+  function sendQuick(text) {
+    if (userInput.disabled) return;
+    handleUserMessage(text);
+  }
+
+  window.onload = () => {
+    addMessage(`Hi! I'm ${BOT_NAME}. Type 'help' to see what I can do, or 'bye' to exit.`, "bot");
+  };
+</script>
+
+</body>
+</html>
